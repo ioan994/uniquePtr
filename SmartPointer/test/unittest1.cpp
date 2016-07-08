@@ -3,8 +3,6 @@
 #include "UniquePtr.h"
 
 #include <type_traits>
-#include <memory>
-#include <functional>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

@@ -40,7 +40,10 @@ public:
 
 	void Reset(T* i_pointer = nullptr)
 	{
-		m_deleter(m_pointer);
+		if (m_pointer)
+		{
+			m_deleter(m_pointer);
+		}
 		m_pointer = i_pointer;
 	}
 
