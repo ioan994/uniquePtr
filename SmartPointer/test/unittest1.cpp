@@ -168,11 +168,23 @@ namespace test
 
 		TEST_METHOD(TestSelfMoveDoesNothing)
 		{
-			bool destructionCalled = false;
-			UniquePtr<DummyWithDestructor> uniquePtr(new DummyWithDestructor(destructionCalled));
+			bool destructorCalled = false;
+         UniquePtr<DummyWithDestructor> uniquePtr(new DummyWithDestructor(destructorCalled));
 			uniquePtr = std::move(uniquePtr);
 
-			Assert::IsFalse(destructionCalled);
+         Assert::IsFalse(destructorCalled);
 		}
+
+      TEST_METHOD(TestDestructorIsNotCalledForNull)
+      {
+         bool destructorCalled = false;
+         auto deleter = [&destructorCalled](int*){destructorCalled = true; };
+
+         {
+            UniquePtr<int, decltype(deleter)> unique(nullptr, deleter);
+         }
+
+         Assert::IsFalse(destructorCalled);
+      }
 	};
 }
