@@ -128,18 +128,13 @@ namespace test
 			Assert::IsTrue(lhsDestructorCalled, L"Destructor was not called for object stored in the left hand side unique ptr.");
 		}
 
-		TEST_METHOD(TestConvertsToTrueIfStorePointer)
+		TEST_METHOD(TestConvertions)
 		{
 			UniquePtr<int> uniquePtr(new int);
+         UniquePtr<int> uniquePtrEmpty;
 			
 			Assert::IsTrue(static_cast<bool>(uniquePtr));
-		}
-
-		TEST_METHOD(TestConvertsToTrueIfStoreNull)
-		{
-			UniquePtr<int> uniquePtr;
-
-			Assert::IsFalse(static_cast<bool>(uniquePtr));
+         Assert::IsFalse(static_cast<bool>(uniquePtrEmpty));
 		}
 
 		TEST_METHOD(TestCustomDeleter)
