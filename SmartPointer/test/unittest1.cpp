@@ -6,10 +6,13 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-
 namespace
 {
-	struct DummyWithDestructor
+   struct Dummy
+   {
+      virtual ~Dummy(){}
+   };
+	struct DummyWithDestructor : public Dummy
 	{
 		DummyWithDestructor(bool& i_destructorCalled) : m_destructorCalled(i_destructorCalled)
 		{
@@ -180,6 +183,22 @@ namespace test
          }
 
          Assert::IsFalse(destructorCalled);
+      }
+
+      TEST_METHOD(TestSupportInheritedObjects)
+      {
+         bool wasDestructorCalled = false;
+         bool wasDestructorCalled2 = false;
+
+         {
+            UniquePtr<DummyWithDestructor> rhsUnique(new DummyWithDestructor(wasDestructorCalled));
+            UniquePtr<Dummy> lhsUnique = std::move(rhsUnique);
+
+            UniquePtr<Dummy> lhsUnique2 = UniquePtr<DummyWithDestructor>(new DummyWithDestructor(wasDestructorCalled2));
+         }
+
+         Assert::IsTrue(wasDestructorCalled);
+         Assert::IsTrue(wasDestructorCalled2);
       }
 	};
 }

@@ -3,6 +3,10 @@
 template<class T>
 struct DefaultDeleter
 {
+   template<class TOther>
+   DefaultDeleter(DefaultDeleter<TOther>&&){}
+   DefaultDeleter() = default;
+
 	void operator()(T* i_ptr) const
 	{
 		delete i_ptr;
@@ -22,9 +26,10 @@ public:
 	{
 	}
 
-	UniquePtr(UniquePtr&& i_uniquePtrOther) :
+   template <class TOther>
+   UniquePtr(UniquePtr<TOther>&& i_uniquePtrOther) :
 		m_pointer(i_uniquePtrOther.Release()),
-		m_deleter(std::move(i_uniquePtrOther.m_deleter))
+      m_deleter(std::move(i_uniquePtrOther.GetDeleter()))
 	{
 	}
 
@@ -57,6 +62,18 @@ public:
 		return m_pointer;
 	}
 
+   T* Release()
+   {
+      T* ptr = m_pointer;
+      m_pointer = nullptr;
+      return ptr;
+   }
+
+   D& GetDeleter()
+   {
+      return m_deleter;
+   }
+
 	T* operator ->() const
 	{
 		return Get();
@@ -65,13 +82,6 @@ public:
 	explicit operator bool() const
 	{
 		return m_pointer != nullptr;
-	}
-
-	T* Release()
-	{
-		T* ptr = m_pointer;
-		m_pointer = nullptr;
-		return ptr;
 	}
 
 	UniquePtr(const UniquePtr&) = delete;
