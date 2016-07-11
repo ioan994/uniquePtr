@@ -91,3 +91,9 @@ private:
 	T* m_pointer;
 	D m_deleter;
 };
+
+template <class T, class... TParams>
+UniquePtr<T> MakeUnique(TParams&&... i_params)
+{
+   return UniquePtr<T>(new T(std::forward<TParams>(i_params)...));
+}

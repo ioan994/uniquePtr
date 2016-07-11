@@ -27,11 +27,11 @@ namespace
 }
 
 namespace test
-{		
+{
 	TEST_CLASS(UniquePtrTest)
 	{
 	public:
-		
+
 		TEST_METHOD(TestGetStoredPointer)
 		{
 			int* ptr = new int;
@@ -122,7 +122,7 @@ namespace test
 			bool rhsDestructorCalled = false;
 			auto rhsDummy = new DummyWithDestructor(rhsDestructorCalled);
 			UniquePtr<DummyWithDestructor> rhs(rhsDummy);
-			
+
 			lhs = std::move(rhs);
 
 			Assert::IsNull(rhs.Get(), L"Right hand side object still holds pointer.");
@@ -134,10 +134,10 @@ namespace test
 		TEST_METHOD(TestConvertions)
 		{
 			UniquePtr<int> uniquePtr(new int);
-         UniquePtr<int> uniquePtrEmpty;
-			
+			UniquePtr<int> uniquePtrEmpty;
+
 			Assert::IsTrue(static_cast<bool>(uniquePtr));
-         Assert::IsFalse(static_cast<bool>(uniquePtrEmpty));
+			Assert::IsFalse(static_cast<bool>(uniquePtrEmpty));
 		}
 
 		TEST_METHOD(TestCustomDeleter)
@@ -150,7 +150,7 @@ namespace test
 			};
 
 			{
-				UniquePtr<int, decltype(deleter)> (new int, deleter);
+				UniquePtr<int, decltype(deleter)>(new int, deleter);
 			}
 
 			Assert::IsTrue(customDestructorCalled);
@@ -167,38 +167,50 @@ namespace test
 		TEST_METHOD(TestSelfMoveDoesNothing)
 		{
 			bool destructorCalled = false;
-         UniquePtr<DummyWithDestructor> uniquePtr(new DummyWithDestructor(destructorCalled));
+			UniquePtr<DummyWithDestructor> uniquePtr(new DummyWithDestructor(destructorCalled));
 			uniquePtr = std::move(uniquePtr);
 
-         Assert::IsFalse(destructorCalled);
+			Assert::IsFalse(destructorCalled);
 		}
 
-      TEST_METHOD(TestDestructorIsNotCalledForNull)
+		TEST_METHOD(TestDestructorIsNotCalledForNull)
+		{
+			bool destructorCalled = false;
+			auto deleter = [&destructorCalled](int*){destructorCalled = true; };
+
+			{
+				UniquePtr<int, decltype(deleter)> unique(nullptr, deleter);
+			}
+
+			Assert::IsFalse(destructorCalled);
+		}
+
+		TEST_METHOD(TestSupportInheritedObjects)
+		{
+			bool wasDestructorCalled = false;
+			bool wasDestructorCalled2 = false;
+
+			{
+				UniquePtr<DummyWithDestructor> rhsUnique(new DummyWithDestructor(wasDestructorCalled));
+				UniquePtr<Dummy> lhsUnique = std::move(rhsUnique);
+
+				UniquePtr<Dummy> lhsUnique2 = UniquePtr<DummyWithDestructor>(new DummyWithDestructor(wasDestructorCalled2));
+			}
+
+			Assert::IsTrue(wasDestructorCalled);
+			Assert::IsTrue(wasDestructorCalled2);
+		}
+
+      TEST_METHOD(TestMakeUnique)
       {
-         bool destructorCalled = false;
-         auto deleter = [&destructorCalled](int*){destructorCalled = true; };
+         using BoolInt = std::pair < bool, int > ;
+         const bool testBool = true;
+         const int testInt = 42;
 
-         {
-            UniquePtr<int, decltype(deleter)> unique(nullptr, deleter);
-         }
+         auto unique = MakeUnique<BoolInt>(testBool, testInt);
 
-         Assert::IsFalse(destructorCalled);
-      }
-
-      TEST_METHOD(TestSupportInheritedObjects)
-      {
-         bool wasDestructorCalled = false;
-         bool wasDestructorCalled2 = false;
-
-         {
-            UniquePtr<DummyWithDestructor> rhsUnique(new DummyWithDestructor(wasDestructorCalled));
-            UniquePtr<Dummy> lhsUnique = std::move(rhsUnique);
-
-            UniquePtr<Dummy> lhsUnique2 = UniquePtr<DummyWithDestructor>(new DummyWithDestructor(wasDestructorCalled2));
-         }
-
-         Assert::IsTrue(wasDestructorCalled);
-         Assert::IsTrue(wasDestructorCalled2);
+         Assert::AreEqual(unique->first, testBool);
+         Assert::AreEqual(unique->second, testInt);
       }
 	};
 }
