@@ -7,10 +7,10 @@ struct DefaultDeleter
    DefaultDeleter(DefaultDeleter<TOther>&&){}
    DefaultDeleter() = default;
 
-	void operator()(T* i_ptr) const
-	{
-		delete i_ptr;
-	}
+   void operator()(T* i_ptr) const
+   {
+      delete i_ptr;
+   }
 };
 
 template <class T, class D = DefaultDeleter<T>>
@@ -18,49 +18,55 @@ class UniquePtr
 {
 public:
 
-	explicit UniquePtr(T* i_pointer = nullptr) : m_pointer(i_pointer)
-	{
-	}
+   explicit UniquePtr(T* i_pointer = nullptr) : m_pointer(i_pointer)
+   {
+   }
 
-	UniquePtr(T* i_pointer, const D& i_deleter) : m_pointer(i_pointer), m_deleter(i_deleter)
-	{
-	}
+   UniquePtr(T* i_pointer, const D& i_deleter) : m_pointer(i_pointer), m_deleter(i_deleter)
+   {
+   }
 
    template <class TOther>
    UniquePtr(UniquePtr<TOther>&& i_uniquePtrOther) :
-		m_pointer(i_uniquePtrOther.Release()),
+      m_pointer(i_uniquePtrOther.Release()),
       m_deleter(std::move(i_uniquePtrOther.GetDeleter()))
-	{
-	}
+   {
+   }
 
-	UniquePtr& operator = (UniquePtr&& i_uniquePtrOther)
-	{
-		if (this != &i_uniquePtrOther)
-		{
-			Reset(i_uniquePtrOther.Release());
-			m_deleter = std::move(i_uniquePtrOther.m_deleter);
-		}
-		return *this;
-	}
+   UniquePtr& operator=(UniquePtr&& i_uniquePtrOther)
+   {
+      if (this != &i_uniquePtrOther)
+      {
+         Reset(i_uniquePtrOther.Release());
+         m_deleter = std::move(i_uniquePtrOther.m_deleter);
+      }
+      return *this;
+   }
 
-	void Reset(T* i_pointer = nullptr)
-	{
-		if (m_pointer)
-		{
-			m_deleter(m_pointer);
-		}
-		m_pointer = i_pointer;
-	}
+   UniquePtr& operator=(nullptr_t)
+   {
+      Reset();
+      return *this;
+   }
 
-	~UniquePtr()
-	{
-		Reset();
-	}
+   void Reset(T* i_pointer = nullptr)
+   {
+      if (m_pointer)
+      {
+         m_deleter(m_pointer);
+      }
+      m_pointer = i_pointer;
+   }
 
-	T* Get() const
-	{
-		return m_pointer;
-	}
+   ~UniquePtr()
+   {
+      Reset();
+   }
+
+   T* Get() const
+   {
+      return m_pointer;
+   }
 
    T* Release()
    {
@@ -79,27 +85,27 @@ public:
       std::swap(m_pointer, i_other.m_pointer);
    }
 
-	T* operator->() const
-	{
-		return m_pointer;
-	}
+   T* operator->() const
+   {
+      return m_pointer;
+   }
 
    T& operator*() const
    {
       return *m_pointer;
    }
 
-	explicit operator bool() const
-	{
-		return m_pointer != nullptr;
-	}
+   explicit operator bool() const
+   {
+      return m_pointer != nullptr;
+   }
 
-	UniquePtr(const UniquePtr&) = delete;
-	UniquePtr& operator = (const UniquePtr&) = delete;
+   UniquePtr(const UniquePtr&) = delete;
+   UniquePtr& operator = (const UniquePtr&) = delete;
 
 private:
-	T* m_pointer;
-	D m_deleter;
+   T* m_pointer;
+   D m_deleter;
 };
 
 template <class T, class... TParams>
@@ -205,7 +211,7 @@ bool operator>(const UniquePtr<T, D>& i_lhs, nullptr_t i_rhs)
 }
 
 template <class T, class D>
-bool operator>(nullptr_t i_lhs, const UniquePtr<T, D>& i_rhs )
+bool operator>(nullptr_t i_lhs, const UniquePtr<T, D>& i_rhs)
 {
    return !(i_lhs <= i_rhs);
 }
