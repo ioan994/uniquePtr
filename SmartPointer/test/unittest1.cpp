@@ -3,7 +3,6 @@
 #include "UniquePtr.h"
 
 #include <type_traits>
-#include <memory>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -25,6 +24,22 @@ namespace
 
       bool& m_destructorCalled;
    };
+
+   struct DestructorCallCounter
+   {
+      DestructorCallCounter()
+      {
+         m_destructorCallsCount = 0;
+      }
+
+      ~DestructorCallCounter()
+      {
+         ++m_destructorCallsCount;
+      }
+
+      static int m_destructorCallsCount;
+   };
+   int DestructorCallCounter::m_destructorCallsCount = 0;
 
    template<class T>
    T* Get(const UniquePtr<T>& i_unique)
@@ -275,6 +290,32 @@ namespace test
          TestUniquePtrOperators<UniquePtr<int>&, nullptr_t>(lesserUniquePtr, nullptr);
 
          greaterUniquePtr.Release();
+      }
+
+      TEST_METHOD(TestUniquePtrWithArray)
+      {
+         {
+            UniquePtr<DestructorCallCounter[]> unique(new DestructorCallCounter[5]);
+         }
+
+         Assert::AreEqual(5, DestructorCallCounter::m_destructorCallsCount);
+      }
+
+      TEST_METHOD(TestIndexOperator)
+      {
+         int* array = new int[2];
+         array[0] = 70;
+         array[1] = 2;
+
+         UniquePtr<int[]> unique(array);
+
+         Assert::AreEqual(70, unique[0]);
+         Assert::AreEqual(2, unique[1]);
+      }
+
+      TEST_METHOD(TestUniquePtrSize)
+      {
+         Assert::AreEqual(sizeof(int*), sizeof(UniquePtr<int>));
       }
    };
 }
