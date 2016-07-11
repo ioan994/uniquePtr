@@ -3,6 +3,7 @@
 #include "UniquePtr.h"
 
 #include <type_traits>
+#include <memory>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -24,6 +25,28 @@ namespace
 
 		bool& m_destructorCalled;
 	};
+
+   template<class T>
+   T* Get(const UniquePtr<T>& i_unique)
+   {
+      return i_unique.Get();
+   }
+
+   nullptr_t Get(nullptr_t)
+   {
+      return nullptr;
+   }
+
+   template <class Left, class Right>
+   void TestUniquePtrOperators(Left i_lhsPointer, Right i_rhsPointer)
+   {
+      Assert::AreEqual(i_lhsPointer == i_rhsPointer, Get(i_lhsPointer) == Get(i_rhsPointer), L"Operator == yields incorrect result.");
+      Assert::AreEqual(i_lhsPointer != i_rhsPointer, Get(i_lhsPointer) != Get(i_rhsPointer), L"Operator != yields incorrect result.");
+      Assert::AreEqual(i_lhsPointer < i_rhsPointer, Get(i_lhsPointer) < Get(i_rhsPointer), L"Operator < yields incorrect result.");
+      Assert::AreEqual(i_lhsPointer <= i_rhsPointer, Get(i_lhsPointer) <= Get(i_rhsPointer), L"Operator <= yields incorrect result.");
+      Assert::AreEqual(i_lhsPointer > i_rhsPointer, Get(i_lhsPointer) > Get(i_rhsPointer), L"Operator > yields incorrect result.");
+      Assert::AreEqual(i_lhsPointer >= i_rhsPointer, Get(i_lhsPointer) >= Get(i_rhsPointer), L"Operator >= yields incorrect result.");
+   }
 }
 
 namespace test
@@ -168,6 +191,7 @@ namespace test
 		{
 			bool destructorCalled = false;
 			UniquePtr<DummyWithDestructor> uniquePtr(new DummyWithDestructor(destructorCalled));
+
 			uniquePtr = std::move(uniquePtr);
 
 			Assert::IsFalse(destructorCalled);
@@ -212,6 +236,34 @@ namespace test
 
          Assert::AreEqual(unique->first, testBool);
          Assert::AreEqual(unique->second, testInt);
+      }
+
+      TEST_METHOD(TestSwap)
+      {
+         int* ptr1 = new int;
+         int* ptr2 = new int;
+         UniquePtr<int> unique1(ptr1);
+         UniquePtr<int> unique2(ptr2);
+
+         unique1.Swap(unique2);
+
+         Assert::IsTrue(unique1.Get() == ptr2);
+         Assert::IsTrue(unique2.Get() == ptr1);
+      }
+
+      TEST_METHOD(TestOperators)
+      {
+         int* ptr = new int;
+         UniquePtr<int> lesserUniquePtr(ptr);
+         UniquePtr<int> greaterUniquePtr(ptr + 1);
+
+         TestUniquePtrOperators<UniquePtr<int>&, UniquePtr<int>&>(lesserUniquePtr, lesserUniquePtr);
+         TestUniquePtrOperators<UniquePtr<int>&, UniquePtr<int>&>(lesserUniquePtr, greaterUniquePtr);
+         TestUniquePtrOperators<UniquePtr<int>&, UniquePtr<int>&>(greaterUniquePtr, lesserUniquePtr);
+         TestUniquePtrOperators<nullptr_t, UniquePtr<int>&>(nullptr, lesserUniquePtr);
+         TestUniquePtrOperators<UniquePtr<int>&, nullptr_t>(lesserUniquePtr, nullptr);
+
+         greaterUniquePtr.Release();
       }
 	};
 }
