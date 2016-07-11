@@ -171,6 +171,7 @@ namespace test
 			uniquePtr = std::move(uniquePtr);
 
 			Assert::IsFalse(destructorCalled);
+         Assert::IsNotNull(uniquePtr.Get());
 		}
 
 		TEST_METHOD(TestDestructorIsNotCalledForNull)
