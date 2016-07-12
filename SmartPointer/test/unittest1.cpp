@@ -44,7 +44,7 @@ namespace
    template<class T>
    T* Get(const UniquePtr<T>& i_unique)
    {
-      return i_unique.Get();
+      return i_unique.get();
    }
 
    nullptr_t Get(nullptr_t)
@@ -75,14 +75,14 @@ namespace test
          int* ptr = new int;
          UniquePtr<int> uniquePtr(ptr);
 
-         Assert::AreEqual(ptr, uniquePtr.Get());
+         Assert::AreEqual(ptr, uniquePtr.get());
       }
 
       TEST_METHOD(TestInitWithNull)
       {
          UniquePtr<int> uniquePtr;
 
-         Assert::IsNull(uniquePtr.Get());
+         Assert::IsNull(uniquePtr.get());
       }
 
       TEST_METHOD(TestReleaseReturnStoredPointerAndStoreNull)
@@ -90,8 +90,8 @@ namespace test
          int val;
          UniquePtr<int> uniquePtr(&val);
 
-         Assert::AreEqual(&val, uniquePtr.Release(), L"Release returned wrong pointer.");
-         Assert::IsNull(uniquePtr.Get(), L"Object still store value");
+         Assert::AreEqual(&val, uniquePtr.release(), L"Release returned wrong pointer.");
+         Assert::IsNull(uniquePtr.get(), L"Object still store value");
       }
 
       TEST_METHOD(TestDestructorCalledWhenOutOfScope)
@@ -125,7 +125,7 @@ namespace test
          unique = nullptr;
 
          Assert::IsTrue(destructorCalled, L"Destructor was not called.");
-         Assert::IsNull(unique.Get(), L"Object still holds pointer.");
+         Assert::IsNull(unique.get(), L"Object still holds pointer.");
       }
 
       TEST_METHOD(TestDestructorCalledAfterResetAndStorePointer)
@@ -135,9 +135,9 @@ namespace test
          bool otherDummyDestructorCalled = false;
          auto otherDummy = new DummyWithDestructor(otherDummyDestructorCalled);
 
-         uniquePtr.Reset(otherDummy);
+         uniquePtr.reset(otherDummy);
 
-         Assert::IsTrue(uniquePtr.Get() == otherDummy, L"Object store wrong pointer.");
+         Assert::IsTrue(uniquePtr.get() == otherDummy, L"Object store wrong pointer.");
          Assert::IsTrue(destructorCalled, L"Destructor was not called.");
       }
 
@@ -145,9 +145,9 @@ namespace test
       {
          UniquePtr<int> uniquePtr(new int);
 
-         uniquePtr.Reset();
+         uniquePtr.reset();
 
-         Assert::IsNull(uniquePtr.Get());
+         Assert::IsNull(uniquePtr.get());
       }
 
       TEST_METHOD(TestMoveConstruction)
@@ -158,8 +158,8 @@ namespace test
          UniquePtr<DummyWithDestructor> rhs(dummy);
          UniquePtr<DummyWithDestructor> lhs = std::move(rhs);
 
-         Assert::IsNull(rhs.Get(), L"Right hand side object still holds pointer.");
-         Assert::IsTrue(dummy == lhs.Get(), L"Pointer was not moved to left hand side object.");
+         Assert::IsNull(rhs.get(), L"Right hand side object still holds pointer.");
+         Assert::IsTrue(dummy == lhs.get(), L"Pointer was not moved to left hand side object.");
          Assert::IsFalse(destructorCalled, L"Destructor was called for stored object.");
       }
 
@@ -174,8 +174,8 @@ namespace test
 
          lhs = std::move(rhs);
 
-         Assert::IsNull(rhs.Get(), L"Right hand side object still holds pointer.");
-         Assert::IsTrue(rhsDummy == lhs.Get(), L"Pointer was not moved to left hand side object.");
+         Assert::IsNull(rhs.get(), L"Right hand side object still holds pointer.");
+         Assert::IsTrue(rhsDummy == lhs.get(), L"Pointer was not moved to left hand side object.");
          Assert::IsFalse(rhsDestructorCalled, L"Destructor was called for object stored in the right hand side unique ptr.");
          Assert::IsTrue(lhsDestructorCalled, L"Destructor was not called for object stored in the left hand side unique ptr.");
       }
@@ -221,7 +221,7 @@ namespace test
          uniquePtr = std::move(uniquePtr);
 
          Assert::IsFalse(destructorCalled);
-         Assert::IsNotNull(uniquePtr.Get());
+         Assert::IsNotNull(uniquePtr.get());
       }
 
       TEST_METHOD(TestDestructorIsNotCalledForNull)
@@ -271,10 +271,10 @@ namespace test
          UniquePtr<int> unique1(ptr1);
          UniquePtr<int> unique2(ptr2);
 
-         unique1.Swap(unique2);
+         unique1.swap(unique2);
 
-         Assert::IsTrue(unique1.Get() == ptr2);
-         Assert::IsTrue(unique2.Get() == ptr1);
+         Assert::IsTrue(unique1.get() == ptr2);
+         Assert::IsTrue(unique2.get() == ptr1);
       }
 
       TEST_METHOD(TestOperators)
@@ -289,7 +289,7 @@ namespace test
          TestUniquePtrOperators<nullptr_t, UniquePtr<int>&>(nullptr, lesserUniquePtr);
          TestUniquePtrOperators<UniquePtr<int>&, nullptr_t>(lesserUniquePtr, nullptr);
 
-         greaterUniquePtr.Release();
+         greaterUniquePtr.release();
       }
 
       TEST_METHOD(TestUniquePtrWithArray)
@@ -315,6 +315,13 @@ namespace test
 
       TEST_METHOD(TestUniquePtrSize)
       {
+         struct free_deleter {
+            void operator()(void* ptr) const { free(ptr); }
+         };
+
+         UniquePtr<int, free_deleter> ptr((int*)malloc(sizeof(int)));
+
+         Assert::AreEqual(sizeof(int*), sizeof(ptr));
          Assert::AreEqual(sizeof(int*), sizeof(UniquePtr<int>));
       }
    };

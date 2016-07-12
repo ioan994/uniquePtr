@@ -29,74 +29,74 @@ struct DefaultDeleter<T[]>
 template<class T, class D, bool noDeleter>
 struct PointerStorage
 {
-   using ElementType = typename std::conditional<std::is_array<T>::value, typename std::remove_extent<T>::type, T>::type;
-   using Pointer = ElementType*;
-   using DeleterType = typename std::decay<D>::type;
+   using element_type = typename std::conditional<std::is_array<T>::value, typename std::remove_extent<T>::type, T>::type;
+   using pointer = element_type*;
+   using deleter_type = typename std::decay<D>::type;
 
-   PointerStorage(Pointer i_pointer, const DeleterType& i_deleter) :
+   PointerStorage(pointer i_pointer, const deleter_type& i_deleter) :
       m_pointer(i_pointer),
       m_deleter(i_deleter)
    {
    }
 
-   PointerStorage(Pointer i_pointer, DeleterType&& i_deleter) :
+   PointerStorage(pointer i_pointer, deleter_type&& i_deleter) :
       m_pointer(i_pointer),
       m_deleter(std::move(i_deleter))
    {
    }
 
-   DeleterType& GetDeleter()
+   deleter_type& get_deleter()
    {
       return m_deleter;
    }
 
-   Pointer m_pointer;
-   DeleterType m_deleter;
+   pointer m_pointer;
+   deleter_type m_deleter;
 };
 
 template<class T, class D>
 struct PointerStorage < T, D, true > : public D
 {
-   using ElementType = typename std::conditional<std::is_array<T>::value, typename std::remove_extent<T>::type, T>::type;
-   using Pointer = ElementType*;
-   using DeleterType = typename std::decay<D>::type;
+   using element_type = typename std::conditional<std::is_array<T>::value, typename std::remove_extent<T>::type, T>::type;
+   using pointer = element_type*;
+   using deleter_type = typename std::decay<D>::type;
 
-   PointerStorage(Pointer i_pointer, const DeleterType& i_deleter) : m_pointer(i_pointer)
+   PointerStorage(pointer i_pointer, const deleter_type& i_deleter) : m_pointer(i_pointer)
    {
    }
 
-   PointerStorage(Pointer i_pointer, DeleterType&& i_deleter) : m_pointer(i_pointer)
+   PointerStorage(pointer i_pointer, deleter_type&& i_deleter) : m_pointer(i_pointer)
    {
    }
 
-   DeleterType& GetDeleter()
+   deleter_type& get_deleter()
    {
       return *this;
    }
 
-   Pointer m_pointer;
+   pointer m_pointer;
 };
 
 template <class T, class D = DefaultDeleter<T>>
-class UniquePtr : public PointerStorage<T,D, std::is_same<D, DefaultDeleter<T>>::value>
+class UniquePtr : public PointerStorage<T, D, std::is_empty<D>::value>
 {
 public:
 
-   explicit UniquePtr(Pointer i_pointer = nullptr) : PointerStorage(i_pointer, DeleterType())
+   explicit UniquePtr(pointer i_pointer = nullptr) : PointerStorage(i_pointer, deleter_type())
    {
    }
 
-   UniquePtr(Pointer i_pointer, const DeleterType& i_deleter) : PointerStorage(i_pointer, i_deleter)
+   UniquePtr(pointer i_pointer, const deleter_type& i_deleter) : PointerStorage(i_pointer, i_deleter)
    {
    }
 
-   UniquePtr(Pointer i_pointer, DeleterType&& i_deleter) : PointerStorage(i_pointer, std::move(i_deleter))
+   UniquePtr(pointer i_pointer, deleter_type&& i_deleter) : PointerStorage(i_pointer, std::move(i_deleter))
    {
    }
 
    template <class TOther>
    UniquePtr(UniquePtr<TOther>&& i_uniquePtrOther) :
-      PointerStorage(i_uniquePtrOther.Release(), std::move(i_uniquePtrOther.GetDeleter()))
+      PointerStorage(i_uniquePtrOther.release(), std::move(i_uniquePtrOther.get_deleter()))
    {
    }
 
@@ -104,61 +104,61 @@ public:
    {
       if (this != &i_uniquePtrOther)
       {
-         Reset(i_uniquePtrOther.Release());
-         GetDeleter() = std::move(i_uniquePtrOther.GetDeleter());
+         reset(i_uniquePtrOther.release());
+         get_deleter() = std::move(i_uniquePtrOther.get_deleter());
       }
       return *this;
    }
 
    UniquePtr& operator=(nullptr_t)
    {
-      Reset();
+      reset();
       return *this;
    }
 
-   void Reset(Pointer i_pointer = nullptr)
+   void reset(pointer i_pointer = nullptr)
    {
       if (m_pointer)
       {
-         GetDeleter()(m_pointer);
+         get_deleter()(m_pointer);
       }
       m_pointer = i_pointer;
    }
 
    ~UniquePtr()
    {
-      Reset();
+      reset();
    }
 
-   Pointer Get() const
+   pointer get() const
    {
       return m_pointer;
    }
 
-   Pointer Release()
+   pointer release()
    {
-      Pointer ptr = m_pointer;
+      pointer ptr = m_pointer;
       m_pointer = nullptr;
       return ptr;
    }
 
-   void Swap(UniquePtr& i_other)
+   void swap(UniquePtr& i_other)
    {
       std::swap(m_pointer, i_other.m_pointer);
    }
 
-   Pointer operator->() const
+   pointer operator->() const
    {
       return m_pointer;
    }
 
-   ElementType& operator*() const
+   element_type& operator*() const
    {
       return *m_pointer;
    }
 
    template < typename = typename std::enable_if< std::is_array<T>::value >::type >
-   ElementType& operator[](size_t i_index) const
+   element_type& operator[](size_t i_index) const
    {
       return m_pointer[i_index];
    }
@@ -179,15 +179,15 @@ UniquePtr<T> MakeUnique(TParams&&... i_params)
 }
 
 template <class T, class D>
-void Swap(UniquePtr<T, D>& i_lhs, UniquePtr<T, D>& i_rhs)
+void swap(UniquePtr<T, D>& i_lhs, UniquePtr<T, D>& i_rhs)
 {
-   i_lhs.Swap(i_rhs);
+   i_lhs.swap(i_rhs);
 }
 
 template <class T, class D, class T2, class D2>
 bool operator==(const UniquePtr<T, D>& i_lhs, const UniquePtr<T2, D2>& i_rhs)
 {
-   return i_lhs.Get() == i_rhs.Get();
+   return i_lhs.get() == i_rhs.get();
 }
 
 template <class T, class D, class T2, class D2>
@@ -199,7 +199,7 @@ bool operator!=(const UniquePtr<T, D>& i_lhs, const UniquePtr<T2, D2>& i_rhs)
 template <class T, class D, class T2, class D2>
 bool operator<(const UniquePtr<T, D>& i_lhs, const UniquePtr<T2, D2>& i_rhs)
 {
-   return i_lhs.Get() < i_rhs.Get();
+   return i_lhs.get() < i_rhs.get();
 }
 
 template <class T, class D, class T2, class D2>
@@ -223,7 +223,7 @@ bool operator>=(const UniquePtr<T, D>& i_lhs, const UniquePtr<T2, D2>& i_rhs)
 template <class T, class D>
 bool operator==(const UniquePtr<T, D>& i_lhs, nullptr_t i_rhs)
 {
-   return !i_lhs.Get();
+   return !i_lhs.get();
 }
 
 template <class T, class D>
@@ -247,13 +247,13 @@ bool operator!=(nullptr_t i_lhs, const UniquePtr<T, D>& i_rhs)
 template <class T, class D>
 bool operator<(const UniquePtr<T, D>& i_lhs, nullptr_t i_rhs)
 {
-   return i_lhs.Get() < i_rhs;
+   return i_lhs.get() < i_rhs;
 }
 
 template <class T, class D>
 bool operator<(nullptr_t i_lhs, const UniquePtr<T, D>& i_rhs)
 {
-   return i_lhs < i_rhs.Get();
+   return i_lhs < i_rhs.get();
 }
 
 template <class T, class D>
