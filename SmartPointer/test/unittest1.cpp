@@ -324,5 +324,14 @@ namespace test
          Assert::AreEqual(sizeof(int*), sizeof(ptr));
          Assert::AreEqual(sizeof(int*), sizeof(UniquePtr<int>));
       }
+
+      TEST_METHOD(TestMakeUniqueForArray)
+      {
+         {
+            auto ptr = MakeUnique<DestructorCallCounter[]>(3);
+         }
+
+         Assert::AreEqual(3, DestructorCallCounter::m_destructorCallsCount);
+      }
    };
 }
