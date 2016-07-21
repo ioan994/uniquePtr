@@ -112,7 +112,7 @@ public:
 
    UniquePtr(pointer i_pointer,
       std::conditional_t<
-         std::is_reference<D>::value, D, const std::remove_reference_t<D>&
+         std::is_reference<D>::value, D, const D&
       > i_deleter) : PointerStorage(i_pointer, i_deleter)
    {
    }
