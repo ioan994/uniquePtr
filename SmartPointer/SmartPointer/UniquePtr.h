@@ -1,6 +1,27 @@
 #pragma once
 
-#include <memory>
+template <class... Params>
+struct voider{ using type = void; };
+
+template<class... Params>
+using void_t = typename voider<Params...>::type;
+
+template <class, class Default, class = void>
+struct pointer_member_or_default
+{
+   using type = Default;
+};
+
+template <class T, class Default>
+struct pointer_member_or_default<T, Default, void_t<typename T::pointer>>
+{
+   using type = typename T::pointer;
+};
+
+template <class T, class Default>
+using pointer_member_or_default_t = typename pointer_member_or_default<T, Default>::type;
+
+
 
 template<class T>
 struct DefaultDeleter
@@ -38,7 +59,7 @@ template<class T, class D, bool noDeleter>
 struct PointerStorage
 {
    using element_type = T;
-   using pointer = typename std::_Get_deleter_pointer_type<element_type, D>::type;
+   using pointer = pointer_member_or_default_t < D, element_type* >;
    using deleter_type = D;
 
    PointerStorage(pointer i_pointer, deleter_type i_deleter) :
@@ -69,7 +90,7 @@ template<class T, class D>
 struct PointerStorage < T, D, true > : public D
 {
    using element_type = T;
-   using pointer = typename std::_Get_deleter_pointer_type<element_type, D>::type;
+   using pointer = pointer_member_or_default_t < D, element_type* > ;//typename std::_Get_deleter_pointer_type<element_type, D>::type;
    using deleter_type = D;
 
    PointerStorage(pointer i_pointer) : m_pointer(i_pointer)

@@ -41,6 +41,16 @@ namespace
    };
    int DestructorCallCounter::m_destructorCallsCount = 0;
 
+   struct DeleterWithoutPointer
+   {
+      template<class T>
+      void operator()(T){}
+   };
+   struct DeleterWithPointer : public DeleterWithoutPointer
+   {
+      using pointer = int*;
+   };
+
    template<class T>
    T* Get(const UniquePtr<T>& i_unique)
    {
@@ -332,6 +342,21 @@ namespace test
          }
 
          Assert::AreEqual(3, DestructorCallCounter::m_destructorCallsCount);
+      }
+
+      TEST_METHOD(TestPointerTypeIsTakenFromDestructor)
+      {
+         using uniquePtrElemType = double;
+         using uniquePtrType = UniquePtr < uniquePtrElemType, DeleterWithPointer>;
+         Assert::IsTrue(std::is_same<uniquePtrType::pointer, DeleterWithPointer::pointer>::value);
+         Assert::IsFalse(std::is_same<uniquePtrType::pointer, uniquePtrElemType*>::value);
+      }
+
+      TEST_METHOD(TestPointerTypeIsNotTakenFromDestructorWhenItDoesNotHaveIt)
+      {
+         using uniquePtrElemType = double;
+         using uniquePtrType = UniquePtr < uniquePtrElemType, DeleterWithoutPointer>;
+         Assert::IsTrue(std::is_same<uniquePtrType::pointer, uniquePtrElemType*>::value);
       }
    };
 }
